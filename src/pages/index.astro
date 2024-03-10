@@ -5,31 +5,58 @@ import Layout from '../layouts/Layout.astro';
 <Layout title="Welcome to Astro.">
   <main>
     <multiplication-view>
-      <h2></h2>
-      <h1 class="product"></h1>
-      <div class="ui">
-        <button class="clear-button">clear</button>
-        <button class="ok-button">OK</button>
+      <div class="log">
+        連続全問正解数 <span class="log-count"></span>
       </div>
-      <div class="num-buttons">
-        {Array(10).fill('').map((_,index) => (
-          <button
-            class="num-button"
-            data-num={index === 9 ? 0 : index + 1}
-          >
-            {index === 9 ? 0 : index + 1}
-          </button>
-        ))}
+      <div class="progress"></div>
+      <h3>
+        <span class="correct-count"></span>
+      </h3>
+      <div class="multiplication-body">
+        <h2></h2>
+        <h1 class="product"></h1>
+        <div class="ui">
+          <button class="clear-button">clear</button>
+          <button class="ok-button">OK</button>
+        </div>
+        <div class="num-buttons">
+          {Array(10).fill('').map((_,index) => (
+            <button
+              class="num-button"
+              data-num={index === 9 ? 0 : index + 1}
+            >
+              {index === 9 ? 0 : index + 1}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div class="result">
+        <img class="result-img" src="" alt="">
       </div>
     </multiplication-view>
   </main>
 </Layout>
 
 <script>
+  import { lsGet, lsSet } from '../lib/ls'
+  
   type XY = {
     x: number;
     y: number;
   }
+
+  const successPics = [
+    'https://d2dcan0armyq93.cloudfront.net/photo/odai/600/4ac85e0359f272ab61913b6d52020f84_600.jpg',
+    'https://pics.prcm.jp/a8261541dacc7/84923849/jpeg/84923849.jpeg',
+    'https://pbs.twimg.com/media/EmsXYtKVcAAk5Qc?format=jpg&name=small',
+    'https://image.minne.com/minne/mobile_app_product/680x680cq85/8381a83017843d423d0173eb0d14b7955e01e82b.jpeg/productimages/94443245/w1600xh1600/ad5c6bf24378ebf333f271ce661d20a271a8e7bc.png?1592966099',
+  ];
+
+  const failurePics = [
+    'https://pics.prcm.jp/1d39ab5e73578/80478352/jpeg/80478352.jpeg',
+    'https://pbs.twimg.com/media/DXwrbAsVwAEqEIa.jpg',
+    'https://cdn-ak.f.st-hatena.com/images/fotolife/t/tamaohioki/20170202/20170202211339.jpg',
+  ];
 
   const multiplicationTable = () => {
     const container: XY[] = [];
@@ -46,10 +73,15 @@ import Layout from '../layouts/Layout.astro';
   }
   
   class MultiplicationView extends HTMLElement {
+    fullCount: number;
     m: XY[];
     cellView:HTMLElement;
+    correctCount: number;
+    successCount: number;
+
     constructor() {
       super();
+      this.fullCount = 81;
       this.m = multiplicationTable();
 
       const ok = this.querySelector('.ok-button')!;
@@ -57,19 +89,31 @@ import Layout from '../layouts/Layout.astro';
       const numButton = this.querySelectorAll('.num-button')!;
       this.cellView = this.querySelector('h2')!;
       const product = this.querySelector('.product')!;
+      this.correctCount = 0;
+      this.successCount = lsGet('_81_consecutive_success_count') || 0;
+      const logCount = this.querySelector('.log-count')! as HTMLElement;
+      logCount.textContent = String(this.successCount);
+      if(this.successCount) {
+        logCount.classList.add('complete')
+      }
 
       this.question()
       ok.addEventListener('click', () => {
         const p = parseInt(this.cellView.dataset.product || '0');
         if(this.cellView.dataset.product === product.textContent) {
-          product.textContent = '正解 ヽ(*^^*)ノ';
+          product.classList.add('correct');
+          product.textContent = '◯';
+          this.correctCount += 1;
         } else {
-          product.textContent = '不正解 ( ´·︵·` )';
+          product.classList.add('incorrect');
+          product.textContent = '✗';
         }
         setTimeout(() => {
+          product.classList.remove('correct');
+          product.classList.remove('incorrect');
           product.textContent = '';
           this.question();
-        }, 2000);
+        }, 1000);
       });
       clear.addEventListener('click', () => {
         product.textContent = '';
@@ -84,13 +128,34 @@ import Layout from '../layouts/Layout.astro';
 
     question() {
       const c = this.m.pop();
+      const progress = this.querySelector('.progress')! as HTMLElement;
+      progress.style.width = `${(this.fullCount - this.m.length) / this.fullCount * 100}%`;
+      const corerectCount = this.querySelector('.correct-count')!;
+      corerectCount.textContent = `正解数 ${this.correctCount}`;
       if(c) {
         this.cellView.textContent = `${c.x} x ${c.y} = ?`;
         this.cellView.dataset.product = String(c.x * c.y);
       } else {
-        const product = this.querySelector('.product')!;
-        product.textContent = 'おわり'
+        this.finish();
       }
+    }
+
+    finish() {
+      lsSet<number>(
+        this.correctCount === 81 ? 
+          this.successCount + 1 : 0,
+        '_81_consecutive_success_count'
+      );
+      const body = this.querySelector('.multiplication-body') as HTMLElement;
+      const result = this.querySelector('.result') as HTMLElement;
+      const resultImg = this.querySelector('.result-img') as HTMLImageElement;
+      if(this.correctCount === 81) {
+        resultImg.src = successPics[Math.floor(Math.random() * successPics.length)]
+      } else {
+        resultImg.src = failurePics[Math.floor(Math.random() * failurePics.length)]
+      }
+      body.style.display = 'none';
+      result.style.display = 'block';
     }
   }
 
@@ -98,24 +163,76 @@ import Layout from '../layouts/Layout.astro';
 </script>
 
 <style>
+  :root {
+    font-size: 10px;
+  }
+  @media (width < 768px) {
+    :root {
+      font-size: 3vw;
+    }
+  }
   main {
+    position: relative;
     margin: auto;
-    padding: 1rem;
-    width: 500px;
-    max-width: calc(100% - 2rem);
+    width: 100%;
+    height: 100%;
     color: white;
     font-size: 20px;
     line-height: 1.6;
   }
+  .result {
+    display: none;
+    width: 300px;
+    overflow: hidden;
+    margin: 60px auto 0;
+  }
+  .result-img {
+    object-fit: contain;
+    width: 100%;
+    height: 100%;
+  }
+  .log {
+    position: absolute;
+    right: .8rem;
+    bottom: .8rem;
+    font-size: 1rem;
+  }
+  .log-count {
+    display: inline-block;
+    margin-left: .3rem;
+    font-size: 1.4rem;
+  }
+  .log-count.complete {
+    color: red;
+    font-size: 2rem;
+  }
+  .progress {
+    display: block;
+    width: 0%;
+    height: 6px;
+    background-color: #52b963;
+  }
   h1 {
     text-align: center;
-    font-size: 3em;
+    font-size: 3rem;
     height: 3.5rem;
     margin-top: 0;
+  }
+  h1.correct {
+    color: red;
+  }
+  h1.incorrect {
+    color: blue;
   }
   h2 {
     text-align: center;
     margin-bottom: 20px;
+    font-size: 2.5rem;
+  }
+  h3 {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 1.4rem;
   }
   .ui {
     display: flex;
@@ -127,6 +244,7 @@ import Layout from '../layouts/Layout.astro';
   .ui button {
     width: calc((100% - 10px)/2);
     height: 40px;
+    font-size: 1.6rem;
   }
   .num-buttons {
     display: grid;
@@ -137,6 +255,7 @@ import Layout from '../layouts/Layout.astro';
   }
   .num-buttons button {
     height: 50px;
+    font-size: 1.6rem;
   }
   .num-buttons button:last-child {
     grid-column: 1/4;
