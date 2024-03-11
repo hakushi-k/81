@@ -94,14 +94,14 @@ import Layout from '../layouts/Layout.astro';
       this.successCount = lsGet('_81_consecutive_success_count') || 0;
       const logCount = this.querySelector('.log-count')! as HTMLElement;
       logCount.textContent = String(this.successCount);
-      if(this.successCount) {
+      if(this.successCount >= 50) {
         logCount.classList.add('complete')
       }
 
       this.question()
       ok.addEventListener('click', () => {
         const p = parseInt(this.cellView.dataset.product || '0');
-        if(this.cellView.dataset.product === product.textContent) {
+        if(p === parseInt(product.textContent || '0')) {
           product.classList.add('correct');
           product.textContent = '○';
           this.correctCount += 1;
@@ -157,6 +157,12 @@ import Layout from '../layouts/Layout.astro';
       }
       body.style.display = 'none';
       result.style.display = 'block';
+      
+      const logCount = this.querySelector('.log-count')! as HTMLElement;
+      logCount.textContent = String(this.successCount + 1);
+      if(this.successCount + 1 >= 50 ) {
+        logCount.classList.add('complete')
+      }
     }
   }
 
