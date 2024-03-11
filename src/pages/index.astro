@@ -6,7 +6,7 @@ import Layout from '../layouts/Layout.astro';
   <main>
     <multiplication-view>
       <div class="log">
-        累計全問正解数 <span class="log-count"></span>
+        累計全問正解数<span class="log-count"></span>
       </div>
       <div class="progress"></div>
       <h3>
@@ -103,7 +103,7 @@ import Layout from '../layouts/Layout.astro';
         const p = parseInt(this.cellView.dataset.product || '0');
         if(this.cellView.dataset.product === product.textContent) {
           product.classList.add('correct');
-          product.textContent = '◯';
+          product.textContent = '○';
           this.correctCount += 1;
         } else {
           product.classList.add('incorrect');
@@ -175,7 +175,7 @@ import Layout from '../layouts/Layout.astro';
     color: white;
     font-size: 2rem;
     line-height: 1.6;
-    text-shadow: .1rem .1rem .1rem #fe3482;
+    text-shadow: .1rem .1rem #fe3482;
   }
   .result {
     display: none;
@@ -216,10 +216,12 @@ import Layout from '../layouts/Layout.astro';
     margin-top: 0;
   }
   h1.correct {
-    color: red;
+    font-weight: 600;
+    text-shadow: .1rem .1rem red;
   }
   h1.incorrect {
-    color: blue;
+    font-weight: 600;
+    text-shadow: .1rem .1rem blue;
   }
   h2 {
     text-align: center;
